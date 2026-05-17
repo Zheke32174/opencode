@@ -18,15 +18,47 @@ This is invariant 1: *"opencode is the only forked core."*
 | Fork root | `dev` branch at clone time |
 | Our branch | `fused-cli` — long-running, target of every fusion commit; rebased against upstream as it evolves |
 
-## Build (P1 — works today)
+## Build (P1 — verified working)
+
+**Build host must have ≥ 10 GB free disk and bun installed.** opencode's full
+build pipeline (`bun run --cwd packages/opencode build`) auto-installs
+cross-platform native binaries for every release target and exceeds 32 GB of
+disk on a constrained build host; **avoid the packaged-binary build** until
+on a larger host. For development + smoke, use the from-source path below.
+
+### Lean install — verified recipe
 
 ```
 git clone https://github.com/Zheke32174/opencode underforge && cd underforge
 git checkout fused-cli
-bun install                                 # ~3 min, ~468 packages
-bun run --cwd packages/opencode build       # builds the CLI
-./packages/opencode/bin/opencode --help     # smoke
+bun install --ignore-scripts --no-optional      # ~2 min, 4647 packages, ~5 GB
 ```
+
+`--ignore-scripts` skips two failing native postinstalls (`tree-sitter-powershell`
+needs an older node-gyp than Python 3.14 ships; `node-pty` builds on demand at
+runtime). `--no-optional` skips the multi-arch native binaries (darwin/win32/
+arm64/freebsd variants of esbuild/sharp/sentry/oxc/turbo/etc.) — they would
+otherwise pull > 20 GB.
+
+### Smoke (P1 milestone — proven 2026-05-17)
+
+```
+bun run --cwd packages/opencode dev -- --help
+```
+
+Prints the opencode banner + the full subcommand list (`run`, `acp`, `mcp`,
+`agent`, `providers`, `serve`, `web`, `mcp`, `session`, `plugin`, `db`, …).
+Exit 0. This is "build clean, baseline test" per cli-fusion-spec §P1.
+
+### What's NOT verified yet (deferred)
+
+- **Packaged binary build** (`script/build.ts`) — needs a build host with
+  > 50 GB free for cross-platform binary fetches. Deferred to P-future.
+- **Tools that need native modules at runtime** — node-pty (live shell),
+  better-sqlite3 (if used), sharp (image). They'll lazy-fail when invoked
+  with `--ignore-scripts` install. Tracked as P3 prereq.
+- **The web UI bundle** — skipped via `--skip-embed-web-ui`; not needed
+  for the CLI path.
 
 ## Phased build (per `nlspec/cli-fusion.md`)
 
