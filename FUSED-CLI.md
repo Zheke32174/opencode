@@ -2,6 +2,8 @@
 
 This is a fork of [`anomalyco/opencode`](https://github.com/anomalyco/opencode) (formerly `sst/opencode`), opened on branch **`fused-cli`** as the chassis for the **underhall cli-fusion factory track**.
 
+> **Naming note.** The fork lives at **[`Zheke32174/underlode`](https://github.com/Zheke32174/underlode)** on GitHub. Local clones use the directory name `underforge/` — the historical working name from P1 setup; it's kept in place because the installed `node_modules` + `bun.lock` reference it as an absolute path on undercity (renaming the dir would force a full ~5 GB re-install). Both names refer to the same project: `underlode` is the canonical public name, `underforge` is the local-disk convention.
+
 > **Spec lives upstream.** The *why* — invariants, the six-source feature catalog, the auth model, the P0–P5 phased build — is in the [underhall](https://github.com/Zheke32174/underhall) repo at [`nlspec/cli-fusion.md`](https://github.com/Zheke32174/underhall/blob/master/nlspec/cli-fusion.md) and the cross-source synthesis at [`docs/teardowns/tool-matrix.md`](https://github.com/Zheke32174/underhall/blob/master/docs/teardowns/tool-matrix.md). This README documents the fork's *current state* and *where the fusion happens*.
 
 ## Why fork opencode
