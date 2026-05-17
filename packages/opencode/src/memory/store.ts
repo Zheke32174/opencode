@@ -15,8 +15,7 @@
  * sharding is deferred — project_id field segregates rows for now per
  * spec open Q#1).
  *
- * Search is LIKE-based for MVP; an FTS5 virtual table + ranking is the
- * P2.1 follow-up commit (no behaviour change required at the API layer).
+ * Search uses FTS5 MATCH + ranking via the memory_fts virtual table.
  *
  * Stability contract: public function signatures match index.ts re-exports
  * exactly. Callers (agent/, command/) stay agnostic of storage.
@@ -72,6 +71,27 @@ function getDb() {
     );
     CREATE INDEX IF NOT EXISTS memory_kind_idx ON memory(kind);
     CREATE INDEX IF NOT EXISTS memory_project_idx ON memory(project_id);
+  `)
+
+  sqlite.exec(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS memory_fts USING fts5(
+      name, description, content,
+      content='memory', content_rowid='rowid'
+    );
+    CREATE TRIGGER IF NOT EXISTS memory_ai AFTER INSERT ON memory BEGIN
+      INSERT INTO memory_fts(rowid, name, description, content)
+      VALUES (new.rowid, new.name, new.description, new.content);
+    END;
+    CREATE TRIGGER IF NOT EXISTS memory_ad AFTER DELETE ON memory BEGIN
+      INSERT INTO memory_fts(memory_fts, rowid, name, description, content)
+      VALUES('delete', old.rowid, old.name, old.description, old.content);
+    END;
+    CREATE TRIGGER IF NOT EXISTS memory_au AFTER UPDATE ON memory BEGIN
+      INSERT INTO memory_fts(memory_fts, rowid, name, description, content)
+      VALUES('delete', old.rowid, old.name, old.description, old.content);
+      INSERT INTO memory_fts(rowid, name, description, content)
+      VALUES (new.rowid, new.name, new.description, new.content);
+    END;
   `)
 
   _db = drizzle({ client: sqlite })
@@ -183,9 +203,38 @@ export async function list(query: MemoryQuery = {}): Promise<MemoryEntry[]> {
 }
 
 export async function search(query: MemoryQuery): Promise<MemoryEntry[]> {
-  // LIKE-based for now; FTS5 ranking is the next P2.1 commit. No API change
-  // when that lands — callers stay on this entrypoint.
-  return list(query)
+  const db = getDb()
+  if (!query.q) return []
+
+  const conds: string[] = ["memory_fts MATCH ?"]
+  const params: (string | number | null)[] = [query.q]
+
+  if (query.kind !== undefined) {
+    conds.push("m.kind = ?")
+    params.push(query.kind)
+  }
+  if (query.projectId === null) {
+    conds.push("m.project_id IS NULL")
+  } else if (query.projectId !== undefined) {
+    conds.push("m.project_id = ?")
+    params.push(query.projectId)
+  }
+
+  const limit = query.limit ?? 20
+  const offset = query.offset ?? 0
+  params.push(limit, offset)
+
+  const stmt = db.$client.query(`
+    SELECT m.id, m.kind, m.name, m.description, m.content, m.project_id,
+           m.metadata, m.time_created, m.time_updated
+    FROM memory m JOIN memory_fts f ON m.rowid = f.rowid
+    WHERE ${conds.join(" AND ")}
+    ORDER BY rank
+    LIMIT ? OFFSET ?
+  `)
+
+  const rows = stmt.all(...params) as MemoryRow[]
+  return rows.map(rowToEntry)
 }
 
 export async function recall(ctx: RecallContext): Promise<MemoryEntry[]> {

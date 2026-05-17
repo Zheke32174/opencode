@@ -5,8 +5,9 @@
  *
  * Mirrors the chassis's <name>.sql.ts convention (see session/session.sql.ts,
  * share/share.sql.ts). Defines the MemoryTable for the SQLite-backed store
- * in store.ts. FTS5 virtual table for full-text search is a P2.1 follow-up
- * commit — for now `search()` falls back to LIKE in the store.
+ * in store.ts. The sibling FTS5 virtual table "memory_fts" (for full-text
+ * search with ranking) cannot be declared as a drizzle sqliteTable; it is
+ * managed by raw DDL in store.ts getDb().
  */
 import { sqliteTable, text, index } from "drizzle-orm/sqlite-core"
 import { Timestamps } from "../storage/schema.sql"
