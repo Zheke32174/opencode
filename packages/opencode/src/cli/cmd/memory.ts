@@ -152,6 +152,61 @@ const MemoryForgetCommand = effectCmd({
   }),
 })
 
+const MemoryExportCommand = effectCmd({
+  command: "export",
+  describe: "export memory DB to a compressed snapshot",
+  builder: (yargs: Argv) =>
+    yargs
+      .option("dir", {
+        type: "string",
+        describe: "export directory (default ~/.local/share/opencode)",
+      })
+      .option("remote", {
+        type: "string",
+        describe: "rclone remote (e.g. mega:underhall-snapshots/agent-memory/)",
+      })
+      .option("daemon", {
+        type: "boolean",
+        default: false,
+        describe: "run as periodic daemon",
+      })
+      .option("interval", {
+        type: "number",
+        describe: "daemon interval in seconds (default 3600)",
+      }),
+  handler: Effect.fn("Cli.memory.export")(function* (args) {
+    const Bridge = yield* Effect.promise(() => import("@/memory/bridge"))
+    if (args.daemon) {
+      const handle = Bridge.startDaemon({
+        exportDir: args.dir,
+        remotePath: args.remote,
+        intervalSeconds: args.interval,
+      })
+      const intervalMsg = args.interval ?? 3600
+      process.stderr.write(`memory bridge daemon started (interval=${intervalMsg}s)\n`)
+      yield* Effect.promise(
+        () =>
+          new Promise<void>((resolve) => {
+            const onExit = () => {
+              handle.stop()
+              resolve()
+            }
+            process.once("SIGTERM", onExit)
+            process.once("SIGINT", onExit)
+          }),
+      )
+      return
+    }
+    const r = yield* Effect.promise(() =>
+      Bridge.exportOnce({
+        exportDir: args.dir,
+        remotePath: args.remote,
+      }),
+    )
+    console.log(`exported ${r.archivePath} (${r.bytes} bytes, pushed=${r.pushed})`)
+  }),
+})
+
 export const MemoryCommand = {
   command: "memory",
   describe: "manage agent memory (cross-session recall)",
@@ -161,6 +216,7 @@ export const MemoryCommand = {
       .command(MemoryAddCommand)
       .command(MemorySearchCommand)
       .command(MemoryForgetCommand)
+      .command(MemoryExportCommand)
       .demandCommand(1, "Specify a subcommand: list | add | search | forget"),
   handler: () => {},
 }
