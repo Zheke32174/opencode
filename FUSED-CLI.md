@@ -29,7 +29,7 @@ on a larger host. For development + smoke, use the from-source path below.
 ### Lean install — verified recipe
 
 ```
-git clone https://github.com/Zheke32174/opencode underforge && cd underforge
+git clone https://github.com/Zheke32174/underlode underforge && cd underforge
 git checkout fused-cli
 bun install --ignore-scripts --no-optional      # ~2 min, 4647 packages, ~5 GB
 ```
