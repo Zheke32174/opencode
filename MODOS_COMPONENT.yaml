@@ -1,0 +1,39 @@
+apiVersion: modos.pleiades/v1alpha1
+kind: Component
+metadata:
+  name: underlode-dependency-mine
+  repository: Zheke32174/underlode
+  visibility: public
+  lifecycle: reference
+  defaultBranch: dev
+spec:
+  roles:
+    - large-resource-corpus
+    - dependency-mine
+    - mechanism-reference
+    - compatibility-source
+  authority: none
+  inputs:
+    - upstream-projects
+    - dependency-metadata
+    - implementation-examples
+  outputs:
+    - dependency-candidates
+    - mechanism-extracts
+    - compatibility-and-risk-evidence
+  capabilitiesProvided:
+    - corpus.dependency.read
+    - mechanism.reference.mine
+    - dependency.adapter.propose
+  capabilitiesRequired:
+    - provenance.preserve
+    - license.inspect
+    - context.immunity.inspect
+    - ghost.world.execute
+  dataClasses:
+    - public
+    - internal
+    - untrusted
+  failurePolicy: read-only
+  promotionPolicy: evidence-gated
+  notes: Underlode is mined selectively. Dependencies or code are not copied into production without license, provenance, security, and compatibility review.
