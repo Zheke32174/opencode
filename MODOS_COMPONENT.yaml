@@ -6,6 +6,9 @@ metadata:
   visibility: public
   lifecycle: reference
   defaultBranch: dev
+  labels:
+    modos.pleiades/subsystem: reference-corpus
+    modos.pleiades/organ-class: dependency-and-mechanism-mine
 spec:
   roles:
     - large-resource-corpus
@@ -22,18 +25,28 @@ spec:
     - mechanism-extracts
     - compatibility-and-risk-evidence
   capabilitiesProvided:
-    - corpus.dependency.read
-    - mechanism.reference.mine
-    - dependency.adapter.propose
+    - corpus.dependency.read@v1
+    - mechanism.reference.mine@v1
+    - dependency.adapter.propose@v1
   capabilitiesRequired:
-    - provenance.preserve
-    - license.inspect
-    - context.immunity.inspect
-    - ghost.world.execute
+    - provenance.preserve@v1
+    - license.inspect@v1
+    - context.immunity.inspect@v1
+    - ghost.world.execute@v1
   dataClasses:
     - public
     - internal
     - untrusted
   failurePolicy: read-only
   promotionPolicy: evidence-gated
-  notes: Underlode is mined selectively. Dependencies or code are not copied into production without license, provenance, security, and compatibility review.
+  relations:
+    - type: supports
+      targetRef: repo:Zheke32174/pleiades
+      scope: build
+      required: false
+  notes: >-
+    Underlode is mined selectively. Dependencies or code are not copied into
+    production without license, provenance, security, context-immunity, and
+    compatibility review. This update preserves the pre-existing identity and
+    read-only authority while bringing capability names under the promoted
+    versioned schema.
